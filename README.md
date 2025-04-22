@@ -72,3 +72,5 @@
 ## 檔案存儲
 
 系統使用data.json檔案存儲所有物品資訊。此檔案將在應用程式首次啟動時自動創建，並在每次操作後自動更新。 
+
+## [相關圖片](https://github.com/ElvisLo030/1140422-java-test/blob/main/photo)
