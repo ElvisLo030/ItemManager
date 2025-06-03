@@ -27,7 +27,7 @@
 
 1. 克隆或下載此項目到本地
    ```
-   git clone https://github.com/ElvisLo030/1140422-java-test
+   git clone https://github.com/ElvisLo030/ItemManager
    ```
 
 2. 使用Maven編譯項目
@@ -42,12 +42,12 @@
 
 ## 使用說明
 
-![](https://github.com/ElvisLo030/1140422-java-test/blob/main/photo/01.png)
+![](https://github.com/ElvisLo030/ItemManager/blob/main/photo/01.png)
 
 1. **新增物品**
    - 填寫物品名稱、編號和價格
    - 點擊「新增」按鈕
-   - ![](https://github.com/ElvisLo030/1140422-java-test/blob/main/photo/02.png)
+   - ![](https://github.com/ElvisLo030/ItemManager/blob/main/photo/02.png)
 
 2. **修改物品**
    - 在表格中點擊要修改的物品
@@ -58,13 +58,13 @@
    - 在表格中點擊要刪除的物品
    - 點擊「刪除」按鈕
    - 確認刪除操作
-   - ![](https://github.com/ElvisLo030/1140422-java-test/blob/main/photo/04.png)
+   - ![](https://github.com/ElvisLo030/ItemManager/blob/main/photo/04.png)
 
 4. **搜索物品**
    - 在搜索欄位輸入關鍵字
    - 點擊「搜索」按鈕
    - 表格將顯示匹配的結果
-   - ![](https://github.com/ElvisLo030/1140422-java-test/blob/main/photo/06.png)
+   - ![](https://github.com/ElvisLo030/ItemManager/blob/main/photo/06.png)
 
 5. **清除表單**
    - 點擊「清除」按鈕可重置輸入欄位
@@ -73,4 +73,4 @@
 
 系統使用data.json檔案存儲所有物品資訊。此檔案將在應用程式首次啟動時自動創建，並在每次操作後自動更新。 
 
-## [相關圖片](https://github.com/ElvisLo030/1140422-java-test/blob/main/photo)
+## [相關圖片](https://github.com/ElvisLo030/ItemManager/blob/main/photo)
