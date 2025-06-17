@@ -8,9 +8,11 @@ public class Item {
     private String code;
     private LocalDateTime addedTime;
     private double price;
+    private String imagePath;
 
     public Item() {
         this.addedTime = LocalDateTime.now();
+        this.imagePath = "";
     }
 
     public Item(String name, String code, double price) {
@@ -18,6 +20,7 @@ public class Item {
         this.code = code;
         this.price = price;
         this.addedTime = LocalDateTime.now();
+        this.imagePath = "";
     }
 
     public Item(String name, String code, LocalDateTime addedTime, double price) {
@@ -25,6 +28,23 @@ public class Item {
         this.code = code;
         this.addedTime = addedTime;
         this.price = price;
+        this.imagePath = "";
+    }
+
+    public Item(String name, String code, double price, String imagePath) {
+        this.name = name;
+        this.code = code;
+        this.price = price;
+        this.addedTime = LocalDateTime.now();
+        this.imagePath = imagePath != null ? imagePath : "";
+    }
+
+    public Item(String name, String code, LocalDateTime addedTime, double price, String imagePath) {
+        this.name = name;
+        this.code = code;
+        this.addedTime = addedTime;
+        this.price = price;
+        this.imagePath = imagePath != null ? imagePath : "";
     }
 
     public String getName() {
@@ -59,6 +79,14 @@ public class Item {
         this.price = price;
     }
 
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath != null ? imagePath : "";
+    }
+
     public String getFormattedAddedTime() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         return addedTime.format(formatter);
@@ -71,6 +99,7 @@ public class Item {
                 ", code='" + code + '\'' +
                 ", addedTime=" + getFormattedAddedTime() +
                 ", price=" + price +
+                ", imagePath='" + imagePath + '\'' +
                 '}';
     }
 } 

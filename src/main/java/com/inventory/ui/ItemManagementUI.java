@@ -1,45 +1,94 @@
 package com.inventory.ui;
 
-import com.inventory.controller.ItemManager;
-import com.inventory.model.Item;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Image;
+import java.awt.Insets;
+import java.awt.RenderingHints;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 
-import javax.swing.*;
+import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.SwingConstants;
+import javax.swing.UIManager;
 import javax.swing.border.AbstractBorder;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.border.MatteBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.List;
-import java.util.Optional;
+import javax.swing.table.JTableHeader;
+
+import com.inventory.controller.ItemManager;
+import com.inventory.model.Item;
 
 public class ItemManagementUI extends JFrame {
     private JPanel contentPane;
     private JTable itemTable;
     private DefaultTableModel tableModel;
     private JTextField txtName;
-    private JTextField txtCode;
     private JTextField txtPrice;
     private JTextField txtSearch;
     private JButton btnAdd;
     private JButton btnUpdate;
     private JButton btnDelete;
     private JButton btnSearch;
-    private JButton btnClear;
+    private JButton btnSelectImage;
+    private JButton btnExport;
     private JLabel lblStatus;
+    private JLabel lblImagePreview;
+    private JScrollPane imageScrollPane;
 
     private final ItemManager itemManager;
     private boolean isEditing = false;
     private String currentCode = "";
+    private String selectedImagePath = "";
+    
+    // 原始資料，用於檢測是否有變更
+    private String originalName = "";
+    private String originalPrice = "";
+    private String originalImagePath = "";
 
-    // 表格欄位名稱
-    private final String[] columns = {"品名", "編號", "加入時間", "價格"};
+    // 表格欄位名稱和排序狀態
+    private final String[] columns = {"品名", "編號", "加入時間", "價格", "圖片"};
+    private final boolean[] sortAscending = {true, true, true, true, true}; // 記錄每欄的排序方向
 
     public ItemManagementUI() {
         itemManager = new ItemManager();
@@ -50,7 +99,7 @@ public class ItemManagementUI extends JFrame {
     private void initializeUI() {
         setTitle("物品管理系統");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setBounds(100, 100, 900, 650);  // 增加窗口大小
+        setBounds(100, 100, 1100, 750);  // 調整窗口大小
         
         // 設置更現代的配色方案
         Color bgDark = new Color(34, 34, 34);
@@ -118,7 +167,11 @@ public class ItemManagementUI extends JFrame {
         lblTitle.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
         topPanel.add(lblTitle, BorderLayout.NORTH);
         
-        // 輸入區域 - 使用網格布局
+        // 創建主輸入面板，分為左右兩部分
+        JPanel mainInputPanel = new JPanel(new BorderLayout(20, 0));
+        mainInputPanel.setBackground(bgMedium);
+        
+        // 輸入區域 - 使用網格布局，移除編號輸入
         JPanel inputPanel = new JPanel();
         inputPanel.setLayout(new GridBagLayout());
         inputPanel.setBackground(bgMedium);
@@ -136,7 +189,7 @@ public class ItemManagementUI extends JFrame {
         gbc.gridwidth = 1;
         inputPanel.add(lblName, gbc);
         
-        txtName = new JTextField(15);
+        txtName = new JTextField(20);
         txtName.setFont(new Font("微軟正黑體", Font.PLAIN, 14));
         txtName.setBackground(bgLight);
         txtName.setForeground(textNormal);
@@ -151,42 +204,17 @@ public class ItemManagementUI extends JFrame {
         gbc.weightx = 1.0;
         inputPanel.add(txtName, gbc);
         
-        // 編號輸入
-        JLabel lblCode = new JLabel("編號:");
-        lblCode.setForeground(textNormal);
-        lblCode.setFont(new Font("微軟正黑體", Font.PLAIN, 14));
-        gbc.gridx = 2;
-        gbc.gridy = 0;
-        gbc.gridwidth = 1;
-        gbc.weightx = 0.0;
-        inputPanel.add(lblCode, gbc);
-        
-        txtCode = new JTextField(10);
-        txtCode.setFont(new Font("微軟正黑體", Font.PLAIN, 14));
-        txtCode.setBackground(bgLight);
-        txtCode.setForeground(textNormal);
-        txtCode.setCaretColor(Color.WHITE);
-        txtCode.setBorder(BorderFactory.createCompoundBorder(
-            roundedBorder,
-            BorderFactory.createEmptyBorder(5, 8, 5, 8)
-        ));
-        gbc.gridx = 3;
-        gbc.gridy = 0;
-        gbc.gridwidth = 1;
-        gbc.weightx = 0.8;
-        inputPanel.add(txtCode, gbc);
-        
         // 價格輸入
         JLabel lblPrice = new JLabel("價格:");
         lblPrice.setForeground(textNormal);
         lblPrice.setFont(new Font("微軟正黑體", Font.PLAIN, 14));
-        gbc.gridx = 4;
-        gbc.gridy = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 1;
         gbc.gridwidth = 1;
         gbc.weightx = 0.0;
         inputPanel.add(lblPrice, gbc);
         
-        txtPrice = new JTextField(10);
+        txtPrice = new JTextField(20);
         txtPrice.setFont(new Font("微軟正黑體", Font.PLAIN, 14));
         txtPrice.setBackground(bgLight);
         txtPrice.setForeground(textNormal);
@@ -195,28 +223,81 @@ public class ItemManagementUI extends JFrame {
             roundedBorder,
             BorderFactory.createEmptyBorder(5, 8, 5, 8)
         ));
-        gbc.gridx = 5;
-        gbc.gridy = 0;
+        gbc.gridx = 1;
+        gbc.gridy = 1;
         gbc.gridwidth = 1;
-        gbc.weightx = 0.8;
+        gbc.weightx = 1.0;
         inputPanel.add(txtPrice, gbc);
         
-        topPanel.add(inputPanel, BorderLayout.CENTER);
+        // 圖片選擇按鈕
+        JLabel lblImage = new JLabel("圖片:");
+        lblImage.setForeground(textNormal);
+        lblImage.setFont(new Font("微軟正黑體", Font.PLAIN, 14));
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.0;
+        inputPanel.add(lblImage, gbc);
         
-        // 搜索面板 - 放在主面板的頂部，但右對齊
-        JPanel searchPanel = new JPanel();
-        searchPanel.setLayout(new BoxLayout(searchPanel, BoxLayout.X_AXIS));
-        searchPanel.setBackground(bgMedium);
-        searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 5, 0));
+        btnSelectImage = new JButton("選擇圖片");
+        styleButton(btnSelectImage, new Color(156, 39, 176), textHighlight);
+        gbc.gridx = 1;
+        gbc.gridy = 2;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.WEST;
+        inputPanel.add(btnSelectImage, gbc);
         
-        // 填充空間，使搜索框靠右
-        searchPanel.add(Box.createHorizontalGlue());
+        mainInputPanel.add(inputPanel, BorderLayout.WEST);
+        
+        // 圖片預覽區域
+        JPanel imagePanel = new JPanel(new BorderLayout());
+        imagePanel.setBackground(bgMedium);
+        imagePanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(accentMain),
+            "圖片預覽",
+            0, 0, new Font("微軟正黑體", Font.BOLD, 14), textNormal
+        ));
+        
+        lblImagePreview = new JLabel("尚未選擇圖片", SwingConstants.CENTER);
+        lblImagePreview.setForeground(textNormal);
+        lblImagePreview.setFont(new Font("微軟正黑體", Font.PLAIN, 12));
+        lblImagePreview.setPreferredSize(new Dimension(200, 150));
+        lblImagePreview.setBorder(BorderFactory.createLineBorder(bgLight));
+        lblImagePreview.setOpaque(true);
+        lblImagePreview.setBackground(bgLight);
+        
+        imageScrollPane = new JScrollPane(lblImagePreview);
+        imageScrollPane.setPreferredSize(new Dimension(220, 170));
+        imageScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        imagePanel.add(imageScrollPane, BorderLayout.CENTER);
+        
+        mainInputPanel.add(imagePanel, BorderLayout.EAST);
+        
+        topPanel.add(mainInputPanel, BorderLayout.CENTER);
+        
+        // 搜索和匯出面板 - 右上角
+        JPanel searchExportPanel = new JPanel();
+        searchExportPanel.setLayout(new BoxLayout(searchExportPanel, BoxLayout.X_AXIS));
+        searchExportPanel.setBackground(bgMedium);
+        searchExportPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 5, 0));
+        
+        // 填充空間，使搜索框和匯出按鈕靠右
+        searchExportPanel.add(Box.createHorizontalGlue());
+        
+        // 匯出按鈕
+        btnExport = new JButton("匯出Excel");
+        styleButton(btnExport, new Color(255, 152, 0), textHighlight);
+        btnExport.setPreferredSize(new Dimension(100, 35));
+        searchExportPanel.add(btnExport);
+        searchExportPanel.add(Box.createRigidArea(new Dimension(15, 0)));
         
         JLabel lblSearch = new JLabel("搜索:");
         lblSearch.setForeground(textNormal);
         lblSearch.setFont(new Font("微軟正黑體", Font.PLAIN, 14));
-        searchPanel.add(lblSearch);
-        searchPanel.add(Box.createRigidArea(new Dimension(5, 0)));
+        searchExportPanel.add(lblSearch);
+        searchExportPanel.add(Box.createRigidArea(new Dimension(5, 0)));
         
         txtSearch = new JTextField(15);
         txtSearch.setFont(new Font("微軟正黑體", Font.PLAIN, 14));
@@ -228,14 +309,14 @@ public class ItemManagementUI extends JFrame {
             roundedBorder,
             BorderFactory.createEmptyBorder(5, 8, 5, 8)
         ));
-        searchPanel.add(txtSearch);
-        searchPanel.add(Box.createRigidArea(new Dimension(10, 0)));
+        searchExportPanel.add(txtSearch);
+        searchExportPanel.add(Box.createRigidArea(new Dimension(10, 0)));
         
         btnSearch = new JButton("搜索");
         styleButton(btnSearch, new Color(103, 58, 183), textHighlight);
-        searchPanel.add(btnSearch);
+        searchExportPanel.add(btnSearch);
         
-        // 操作按鈕面板 - 在頂部面板底部
+        // 操作按鈕面板
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 0));
         buttonPanel.setBackground(bgMedium);
@@ -255,10 +336,6 @@ public class ItemManagementUI extends JFrame {
         btnDelete.setEnabled(false);
         buttonPanel.add(btnDelete);
         
-        btnClear = new JButton("清除");
-        styleButton(btnClear, new Color(158, 158, 158), textHighlight);
-        buttonPanel.add(btnClear);
-        
         // 狀態標籤
         lblStatus = new JLabel(" ");
         lblStatus.setForeground(new Color(255, 152, 0));
@@ -266,10 +343,17 @@ public class ItemManagementUI extends JFrame {
         buttonPanel.add(Box.createHorizontalStrut(20));
         buttonPanel.add(lblStatus);
         
+        // 提示標籤
+        JLabel lblHint = new JLabel("提示：點擊空白處可清除表單，修改按鈕會在資料變更時啟用");
+        lblHint.setForeground(new Color(158, 158, 158));
+        lblHint.setFont(new Font("微軟正黑體", Font.PLAIN, 12));
+        buttonPanel.add(Box.createHorizontalStrut(20));
+        buttonPanel.add(lblHint);
+        
         // 將所有面板組合到頂部
         JPanel controlPanel = new JPanel(new BorderLayout());
         controlPanel.setBackground(bgMedium);
-        controlPanel.add(searchPanel, BorderLayout.NORTH);
+        controlPanel.add(searchExportPanel, BorderLayout.NORTH);
         controlPanel.add(buttonPanel, BorderLayout.SOUTH);
         
         topPanel.add(controlPanel, BorderLayout.SOUTH);
@@ -300,10 +384,14 @@ public class ItemManagementUI extends JFrame {
         
         // 設置表格列寬
         TableColumnModel columnModel = itemTable.getColumnModel();
-        columnModel.getColumn(0).setPreferredWidth(250);  // 品名列寬
-        columnModel.getColumn(1).setPreferredWidth(150);  // 編號列寬
-        columnModel.getColumn(2).setPreferredWidth(200);  // 時間列寬
+        columnModel.getColumn(0).setPreferredWidth(220);  // 品名列寬
+        columnModel.getColumn(1).setPreferredWidth(120);  // 編號列寬
+        columnModel.getColumn(2).setPreferredWidth(180);  // 時間列寬
         columnModel.getColumn(3).setPreferredWidth(100);  // 價格列寬
+        columnModel.getColumn(4).setPreferredWidth(120);  // 圖片列寬
+        
+        // 設置表格標題可點擊排序
+        setupTableHeaderSorting();
         
         // 創建自定義的滾動面板
         JScrollPane scrollPane = new JScrollPane(itemTable);
@@ -321,12 +409,223 @@ public class ItemManagementUI extends JFrame {
         
         contentPane.add(tablePanel, BorderLayout.CENTER);
         
+        // 添加點擊空白處清除表單的功能
+        addClearFormListeners();
+        
+        // 添加輸入變更監聽器
+        addInputChangeListeners();
+        
         // 註冊事件監聽器
         registerEventHandlers();
     }
 
+    // 添加輸入變更監聽器
+    private void addInputChangeListeners() {
+        DocumentListener changeListener = new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                checkForChanges();
+            }
+            
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                checkForChanges();
+            }
+            
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                checkForChanges();
+            }
+        };
+        
+        txtName.getDocument().addDocumentListener(changeListener);
+        txtPrice.getDocument().addDocumentListener(changeListener);
+    }
+
+    // 檢查是否有變更
+    private void checkForChanges() {
+        if (!isEditing) {
+            return;
+        }
+        
+        String currentName = txtName.getText().trim();
+        String currentPrice = txtPrice.getText().trim();
+        String currentImagePath = selectedImagePath;
+        
+        boolean hasChanges = !currentName.equals(originalName) ||
+                           !currentPrice.equals(originalPrice) ||
+                           !currentImagePath.equals(originalImagePath);
+        
+        btnUpdate.setEnabled(hasChanges && !currentName.isEmpty() && !currentPrice.isEmpty());
+        
+        if (hasChanges) {
+            lblStatus.setText("已偵測到資料變更");
+        } else {
+            lblStatus.setText("已選擇物品：" + originalName + " (編號：" + currentCode + ")");
+        }
+    }
+
+    // 設置表格標題排序功能
+    private void setupTableHeaderSorting() {
+        JTableHeader header = itemTable.getTableHeader();
+        header.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        header.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int column = header.columnAtPoint(e.getPoint());
+                if (column >= 0 && column < columns.length) {
+                    sortTableByColumn(column);
+                }
+            }
+            
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                int column = header.columnAtPoint(e.getPoint());
+                if (column >= 0) {
+                    header.setToolTipText("點擊排序：" + columns[column]);
+                }
+            }
+        });
+    }
+
+    // 依據欄位排序表格
+    private void sortTableByColumn(int column) {
+        List<Item> items = itemManager.getAllItems();
+        
+        // 切換排序方向
+        sortAscending[column] = !sortAscending[column];
+        boolean ascending = sortAscending[column];
+        
+        // 根據欄位進行排序
+        switch (column) {
+            case 0: // 品名
+                items.sort(ascending ? 
+                    Comparator.comparing(Item::getName) : 
+                    Comparator.comparing(Item::getName).reversed());
+                break;
+            case 1: // 編號
+                items.sort(ascending ? 
+                    Comparator.comparing(Item::getCode) : 
+                    Comparator.comparing(Item::getCode).reversed());
+                break;
+            case 2: // 加入時間
+                items.sort(ascending ? 
+                    Comparator.comparing(Item::getAddedTime) : 
+                    Comparator.comparing(Item::getAddedTime).reversed());
+                break;
+            case 3: // 價格
+                items.sort(ascending ? 
+                    Comparator.comparing(Item::getPrice) : 
+                    Comparator.comparing(Item::getPrice).reversed());
+                break;
+            case 4: // 圖片
+                items.sort(ascending ? 
+                    Comparator.comparing(item -> item.getImagePath().isEmpty() ? "無圖片" : "有圖片") : 
+                    Comparator.comparing((Item item) -> item.getImagePath().isEmpty() ? "無圖片" : "有圖片").reversed());
+                break;
+        }
+        
+        updateTable(items);
+        
+        // 更新狀態提示
+        String direction = ascending ? "正向" : "反向";
+        lblStatus.setText(columns[column] + " " + direction + "排序");
+    }
+
+    // 添加點擊空白處清除表單的監聽器
+    private void addClearFormListeners() {
+        MouseAdapter clearFormListener = new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                // 確保點擊的不是輸入元件或按鈕
+                Component clickedComponent = e.getComponent();
+                if (!(clickedComponent instanceof JTextField) && 
+                    !(clickedComponent instanceof JButton) &&
+                    !(clickedComponent instanceof JTable)) {
+                    clearFormAndResetState();
+                }
+            }
+        };
+        
+        // 為主面板和各個子面板添加監聽器
+        contentPane.addMouseListener(clearFormListener);
+        addMouseListenerRecursively(contentPane, clearFormListener);
+    }
+
+    // 遞歸添加鼠標監聽器
+    private void addMouseListenerRecursively(Container container, MouseAdapter listener) {
+        for (Component component : container.getComponents()) {
+            if (component instanceof Container && 
+                !(component instanceof JTextField) &&
+                !(component instanceof JButton) &&
+                !(component instanceof JTable)) {
+                component.addMouseListener(listener);
+                addMouseListenerRecursively((Container) component, listener);
+            }
+        }
+    }
+
     private void registerEventHandlers() {
-        // 新增按鈕事件
+        // 匯出按鈕事件
+        btnExport.addActionListener(e -> {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("匯出Excel檔案");
+            fileChooser.setFileFilter(new FileNameExtensionFilter("Excel檔案 (*.xlsx)", "xlsx"));
+            
+            // 設定預設檔名
+            String defaultFileName = "物品清單_" + 
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".xlsx";
+            fileChooser.setSelectedFile(new File(defaultFileName));
+            
+            int result = fileChooser.showSaveDialog(this);
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = fileChooser.getSelectedFile();
+                String filePath = selectedFile.getAbsolutePath();
+                
+                // 確保檔名以.xlsx結尾
+                if (!filePath.toLowerCase().endsWith(".xlsx")) {
+                    filePath += ".xlsx";
+                }
+                
+                boolean success = itemManager.exportToExcel(filePath);
+                if (success) {
+                    lblStatus.setText("Excel檔案匯出成功: " + selectedFile.getName());
+                    JOptionPane.showMessageDialog(this, 
+                        "Excel檔案已成功匯出至:\n" + filePath, 
+                        "匯出成功", 
+                        JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    lblStatus.setText("Excel檔案匯出失敗");
+                    JOptionPane.showMessageDialog(this, 
+                        "匯出Excel檔案時發生錯誤，請檢查檔案路徑是否正確", 
+                        "匯出失敗", 
+                        JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        
+        // 圖片選擇按鈕事件
+        btnSelectImage.addActionListener(e -> {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("選擇圖片");
+            FileNameExtensionFilter filter = new FileNameExtensionFilter(
+                "圖片檔案", "jpg", "jpeg", "png", "gif", "bmp");
+            fileChooser.setFileFilter(filter);
+            
+            int result = fileChooser.showOpenDialog(this);
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = fileChooser.getSelectedFile();
+                selectedImagePath = selectedFile.getAbsolutePath();
+                displayImagePreview(selectedImagePath);
+                lblStatus.setText("已選擇圖片: " + selectedFile.getName());
+                
+                // 觸發變更檢查
+                checkForChanges();
+            }
+        });
+        
+        // 新增按鈕事件 - 使用自動產生編號
         btnAdd.addActionListener(e -> {
             if (isEditing) {
                 lblStatus.setText("請先取消編輯狀態");
@@ -335,27 +634,36 @@ public class ItemManagementUI extends JFrame {
             
             try {
                 String name = txtName.getText().trim();
-                String code = txtCode.getText().trim();
                 String priceText = txtPrice.getText().trim();
                 
                 // 表單驗證
-                if (name.isEmpty() || code.isEmpty() || priceText.isEmpty()) {
+                if (name.isEmpty() || priceText.isEmpty()) {
                     lblStatus.setText("請填寫所有欄位");
                     return;
                 }
                 
                 double price = Double.parseDouble(priceText);
                 
-                // 創建並添加新物品
-                Item item = new Item(name, code, price);
-                boolean success = itemManager.addItem(item);
+                // 處理圖片複製
+                String imagePath = "";
+                if (!selectedImagePath.isEmpty()) {
+                    try {
+                        imagePath = itemManager.copyImageToDataDir(selectedImagePath);
+                    } catch (IOException ex) {
+                        lblStatus.setText("圖片複製失敗: " + ex.getMessage());
+                        return;
+                    }
+                }
+                
+                // 使用自動產生編號的方法新增物品
+                boolean success = itemManager.addItem(name, price, imagePath);
                 
                 if (success) {
-                    lblStatus.setText("物品新增成功");
-                    clearForm();
+                    lblStatus.setText("物品新增成功，編號自動產生");
+                    clearFormAndResetState();
                     loadAllItems();
                 } else {
-                    lblStatus.setText("編號已存在，無法新增");
+                    lblStatus.setText("新增失敗");
                 }
             } catch (NumberFormatException ex) {
                 lblStatus.setText("價格必須是數字");
@@ -376,22 +684,31 @@ public class ItemManagementUI extends JFrame {
                 
                 double price = Double.parseDouble(priceText);
                 
+                // 處理圖片複製
+                String imagePath = "";
+                if (!selectedImagePath.isEmpty()) {
+                    try {
+                        imagePath = itemManager.copyImageToDataDir(selectedImagePath);
+                    } catch (IOException ex) {
+                        lblStatus.setText("圖片複製失敗: " + ex.getMessage());
+                        return;
+                    }
+                } else {
+                    // 如果沒有選擇新圖片，保留原有圖片
+                    Optional<Item> currentItem = itemManager.getItemByCode(currentCode);
+                    if (currentItem.isPresent()) {
+                        imagePath = currentItem.get().getImagePath();
+                    }
+                }
+                
                 // 創建更新的物品
-                Item updatedItem = new Item(name, currentCode, price);
+                Item updatedItem = new Item(name, currentCode, price, imagePath);
                 boolean success = itemManager.updateItem(currentCode, updatedItem);
                 
                 if (success) {
                     lblStatus.setText("物品更新成功");
-                    clearForm();
+                    clearFormAndResetState();
                     loadAllItems();
-                    
-                    // 重置編輯狀態
-                    isEditing = false;
-                    currentCode = "";
-                    btnAdd.setEnabled(true);
-                    txtCode.setEditable(true);
-                    btnUpdate.setEnabled(false);
-                    btnDelete.setEnabled(false);
                 } else {
                     lblStatus.setText("更新失敗，物品不存在");
                 }
@@ -414,16 +731,8 @@ public class ItemManagementUI extends JFrame {
                 
                 if (success) {
                     lblStatus.setText("物品刪除成功");
-                    clearForm();
+                    clearFormAndResetState();
                     loadAllItems();
-                    
-                    // 重置編輯狀態
-                    isEditing = false;
-                    currentCode = "";
-                    btnAdd.setEnabled(true);
-                    txtCode.setEditable(true);
-                    btnUpdate.setEnabled(false);
-                    btnDelete.setEnabled(false);
                 } else {
                     lblStatus.setText("刪除失敗，物品不存在");
                 }
@@ -438,20 +747,6 @@ public class ItemManagementUI extends JFrame {
             lblStatus.setText("找到 " + searchResults.size() + " 個物品");
         });
         
-        // 清除按鈕事件
-        btnClear.addActionListener(e -> {
-            clearForm();
-            lblStatus.setText("");
-            
-            // 重置編輯狀態
-            isEditing = false;
-            currentCode = "";
-            btnAdd.setEnabled(true);
-            txtCode.setEditable(true);
-            btnUpdate.setEnabled(false);
-            btnDelete.setEnabled(false);
-        });
-        
         // 表格點擊事件
         itemTable.addMouseListener(new MouseAdapter() {
             @Override
@@ -464,22 +759,83 @@ public class ItemManagementUI extends JFrame {
                     if (itemOpt.isPresent()) {
                         Item item = itemOpt.get();
                         
+                        // 儲存原始資料
+                        originalName = item.getName();
+                        originalPrice = String.valueOf(item.getPrice());
+                        originalImagePath = "";
+                        
                         // 填充表單
                         txtName.setText(item.getName());
-                        txtCode.setText(item.getCode());
                         txtPrice.setText(String.valueOf(item.getPrice()));
+                        
+                        // 顯示圖片預覽
+                        if (item.getImagePath() != null && !item.getImagePath().trim().isEmpty()) {
+                            String imagePath = "data" + File.separator + item.getImagePath();
+                            displayImagePreview(imagePath);
+                            selectedImagePath = ""; // 清空選擇的新圖片路徑
+                            originalImagePath = ""; // 保留原有圖片路徑
+                        } else {
+                            clearImagePreview();
+                        }
                         
                         // 設置編輯狀態
                         isEditing = true;
                         currentCode = item.getCode();
-                        txtCode.setEditable(false);
                         btnAdd.setEnabled(false);
-                        btnUpdate.setEnabled(true);
+                        btnUpdate.setEnabled(false); // 初始時不啟用，等有變更才啟用
                         btnDelete.setEnabled(true);
+                        
+                        lblStatus.setText("已選擇物品：" + item.getName() + " (編號：" + item.getCode() + ")");
                     }
                 }
             }
         });
+    }
+
+    private void displayImagePreview(String imagePath) {
+        try {
+            File imageFile = new File(imagePath);
+            if (imageFile.exists()) {
+                BufferedImage originalImage = ImageIO.read(imageFile);
+                
+                // 縮放圖片以適應預覽區域
+                int maxWidth = 190;
+                int maxHeight = 140;
+                Image scaledImage = scaleImage(originalImage, maxWidth, maxHeight);
+                
+                ImageIcon imageIcon = new ImageIcon(scaledImage);
+                lblImagePreview.setIcon(imageIcon);
+                lblImagePreview.setText("");
+            } else {
+                lblImagePreview.setIcon(null);
+                lblImagePreview.setText("圖片檔案不存在");
+            }
+        } catch (IOException e) {
+            lblImagePreview.setIcon(null);
+            lblImagePreview.setText("無法載入圖片");
+            System.err.println("載入圖片時發生錯誤: " + e.getMessage());
+        }
+    }
+
+    private void clearImagePreview() {
+        lblImagePreview.setIcon(null);
+        lblImagePreview.setText("尚未選擇圖片");
+        selectedImagePath = "";
+    }
+
+    private Image scaleImage(BufferedImage originalImage, int maxWidth, int maxHeight) {
+        int originalWidth = originalImage.getWidth();
+        int originalHeight = originalImage.getHeight();
+        
+        // 計算縮放比例
+        double scaleWidth = (double) maxWidth / originalWidth;
+        double scaleHeight = (double) maxHeight / originalHeight;
+        double scale = Math.min(scaleWidth, scaleHeight);
+        
+        int scaledWidth = (int) (originalWidth * scale);
+        int scaledHeight = (int) (originalHeight * scale);
+        
+        return originalImage.getScaledInstance(scaledWidth, scaledHeight, Image.SCALE_SMOOTH);
     }
 
     private void loadAllItems() {
@@ -493,21 +849,32 @@ public class ItemManagementUI extends JFrame {
         
         // 添加物品到表格
         for (Item item : items) {
+            String imageStatus = (item.getImagePath() != null && !item.getImagePath().trim().isEmpty()) 
+                ? "有圖片" : "無圖片";
+            
             Object[] rowData = {
                 item.getName(),
                 item.getCode(),
                 item.getFormattedAddedTime(),
-                String.format("%.2f", item.getPrice())
+                String.format("%.2f", item.getPrice()),
+                imageStatus
             };
             tableModel.addRow(rowData);
         }
     }
 
-    private void clearForm() {
+    private void clearFormAndResetState() {
         txtName.setText("");
-        txtCode.setText("");
         txtPrice.setText("");
+        clearImagePreview();
         itemTable.clearSelection();
+        
+        // 重置編輯狀態
+        isEditing = false;
+        currentCode = "";
+        btnAdd.setEnabled(true);
+        btnUpdate.setEnabled(false);
+        btnDelete.setEnabled(false);
     }
 
     /**

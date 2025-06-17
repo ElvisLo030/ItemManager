@@ -58,3 +58,5 @@ build/
 
 # Application specific
 data.json 
+
+data/
