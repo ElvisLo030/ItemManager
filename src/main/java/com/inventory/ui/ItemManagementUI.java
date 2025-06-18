@@ -459,7 +459,7 @@ public class ItemManagementUI extends JFrame {
         btnUpdate.setEnabled(hasChanges && !currentName.isEmpty() && !currentPrice.isEmpty());
         
         if (hasChanges) {
-            lblStatus.setText("已偵測到資料變更");
+            lblStatus.setText("");
         } else {
             lblStatus.setText("已選擇物品：" + originalName + " (編號：" + currentCode + ")");
         }
